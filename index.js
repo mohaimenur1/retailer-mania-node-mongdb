@@ -12,8 +12,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const uri =
-  'mongodb+srv://retailer:d5HFqRVXPS0zdE0G@cluster0.ap4ff9h.mongodb.net/?retryWrites=true&w=majority';
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.ap4ff9h.mongodb.net/?retryWrites=true&w=majority`;
 
 const client = new MongoClient(uri, {
   useNewUrlParser: true,
@@ -43,9 +42,6 @@ run().catch(console.log());
 app.get('/', (req, res) => {
   res.send('retailer server work');
 });
-
-// DB_user = retailer;
-// DB_password = d5HFqRVXPS0zdE0G;
 
 //category load
 
