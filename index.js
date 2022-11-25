@@ -1,9 +1,9 @@
 /** @format */
 
-const express = require('express');
-const cors = require('cors');
-const { MongoClient, ServerApiVersion } = require('mongodb');
-require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+require("dotenv").config();
 
 const app = express();
 
@@ -24,14 +24,29 @@ async function run() {
   try {
     //create collections
     const retailerCollection = client
-      .db('retailerMania')
-      .collection('categories');
+      .db("retailerMania")
+      .collection("categories");
+    const dellCollection = client.db("retailerMania").collection("dell");
 
-    //category loading
-    app.get('/category', async (req, res) => {
+    //categories showing
+    app.get("/category", async (req, res) => {
       const cursor = retailerCollection.find({});
       const category = await cursor.toArray();
       res.send(category);
+    });
+
+    //filtering the category id and get specific category items
+    app.get("/category/:id", async (req, res) => {
+      let id = req.params.id;
+      let query = { categoryid: id };
+      // if (id) {
+      //   query = {
+      //     categoryid: id,
+      //   };
+      // }
+      const cursor = dellCollection.find(query);
+      const items = await cursor.toArray();
+      res.send(items);
     });
   } finally {
   }
@@ -39,8 +54,8 @@ async function run() {
 
 run().catch(console.log());
 
-app.get('/', (req, res) => {
-  res.send('retailer server work');
+app.get("/", (req, res) => {
+  res.send("retailer server work");
 });
 
 //category load
