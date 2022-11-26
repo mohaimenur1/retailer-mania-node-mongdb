@@ -31,6 +31,9 @@ async function run() {
       .db("retailerMania")
       .collection("laptopBookings");
 
+    //users collection
+    const usersCollection = client.db("retailerMania").collection("users");
+
     //categories showing
     app.get("/category", async (req, res) => {
       const cursor = retailerCollection.find({});
@@ -47,10 +50,26 @@ async function run() {
       res.send(items);
     });
 
-    //inserting laptop booking data
+    //get user specific data into database
+    app.get("/bookings", async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const bookings = laptopBookingCollection.find(query);
+      const result = await bookings.toArray();
+      res.send(result);
+    });
+
+    // inserting laptop booking data
     app.post("/bookings", async (req, res) => {
       const bookings = req.body;
       const result = await laptopBookingCollection.insertOne(bookings);
+      res.send(result);
+    });
+
+    //user data save into database
+    app.post("/users", async (req, res) => {
+      const user = req.body;
+      const result = await usersCollection.insertOne(user);
       res.send(result);
     });
   } finally {
