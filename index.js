@@ -1,10 +1,10 @@
 /** @format */
 
-const express = require('express');
-const cors = require('cors');
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
-const jwt = require('jsonwebtoken');
-require('dotenv').config();
+const express = require("express");
+const cors = require("cors");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 
 const app = express();
 
@@ -24,12 +24,12 @@ const client = new MongoClient(uri, {
 function verifyJWT(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
-    return res.status(401).send('unauthorized access');
+    return res.status(401).send("unauthorized access");
   }
-  const token = authHeader.split(' ')[1];
+  const token = authHeader.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
     if (err) {
-      return res.status(403).send({ message: 'forbidden access' });
+      return res.status(403).send({ message: "forbidden access" });
     }
     req.decoded = decoded;
     next();
@@ -40,33 +40,33 @@ async function run() {
   try {
     //create collections
     const retailerCollection = client
-      .db('retailerMania')
-      .collection('categories');
-    const dellCollection = client.db('retailerMania').collection('dell');
+      .db("retailerMania")
+      .collection("categories");
+    const dellCollection = client.db("retailerMania").collection("dell");
     const laptopBookingCollection = client
-      .db('retailerMania')
-      .collection('laptopBookings');
+      .db("retailerMania")
+      .collection("laptopBookings");
 
     //users collection
-    const usersCollection = client.db('retailerMania').collection('users');
-    const sellersCollection = client.db('retailerMania').collection('sellers');
+    const usersCollection = client.db("retailerMania").collection("users");
+    const sellersCollection = client.db("retailerMania").collection("sellers");
 
     //categories showing
-    app.get('/category', async (req, res) => {
+    app.get("/category", async (req, res) => {
       const cursor = retailerCollection.find({});
       const category = await cursor.toArray();
       res.send(category);
     });
 
     //filtering the category id and get specific category items
-    app.get('/category/:id', async (req, res) => {
+    app.get("/category/:id", async (req, res) => {
       let id = req.params.id;
       let query = { categoryid: id };
       const cursor = dellCollection.find(query);
       const items = await cursor.toArray();
       res.send(items);
     });
-    app.get('/products', async (req, res) => {
+    app.get("/products", async (req, res) => {
       let email = req.query.email;
       let query = { email: email };
       const cursor = dellCollection.find(query);
@@ -75,7 +75,7 @@ async function run() {
     });
 
     //add product category route
-    app.get('/categoryadd', async (req, res) => {
+    app.get("/categoryadd", async (req, res) => {
       const query = {};
       const result = await retailerCollection
         .find(query)
@@ -85,12 +85,12 @@ async function run() {
     });
 
     //get user specific data into database
-    app.get('/bookings', verifyJWT, async (req, res) => {
+    app.get("/bookings", verifyJWT, async (req, res) => {
       const email = req.query.email;
       const decodedEmail = req.decoded.email;
       // console.log("token", req.headers.authorization);
       if (email !== decodedEmail) {
-        return res.status(403).send({ message: 'forbidden access' });
+        return res.status(403).send({ message: "forbidden access" });
       }
       const query = { email: email };
 
@@ -100,62 +100,70 @@ async function run() {
     });
 
     // inserting laptop booking data
-    app.post('/bookings', async (req, res) => {
+    app.post("/bookings", async (req, res) => {
       const bookings = req.body;
       const result = await laptopBookingCollection.insertOne(bookings);
       res.send(result);
     });
 
-    app.get('/jwt', async (req, res) => {
+    app.get("/jwt", async (req, res) => {
       const email = req.query.email;
       const query = { email: email };
       const user = await usersCollection.findOne(query);
 
       if (user) {
         const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
-          expiresIn: '1h',
+          expiresIn: "1h",
         });
         return res.send({ accessToken: token });
       }
       console.log(user);
-      res.status(403).send({ accessToken: '' });
+      res.status(403).send({ accessToken: "" });
     });
 
     //get all the users
-    app.get('/users', async (req, res) => {
+    app.get("/users", async (req, res) => {
       const query = {};
       const users = await usersCollection.find(query).toArray();
       res.send(users);
     });
 
-    app.get('/users/admin/:email', async (req, res) => {
+    app.get("/users/admin/:email", async (req, res) => {
       const email = req.params.email;
       const query = { email };
       const user = await usersCollection.findOne(query);
-      res.send({ isAdmin: user?.role === 'admin' });
-    });
-    app.get('/users/seller/:email', async (req, res) => {
-      const email = req.params.email;
-      const query = { email };
-      const user = await usersCollection.findOne(query);
-      res.send({ isSeller: user?.role === 'seller' });
+      res.send({ isAdmin: user?.role === "admin" });
     });
 
+    app.get("/users/seller/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({ isSeller: user?.role === "seller" });
+    });
+
+    //
+    app.get("/users/:role", async (req, res) => {
+      const user = req.params.role;
+      const query = { role: user };
+      const userRole = await usersCollection.find(query).toArray();
+      res.send(userRole);
+    });
     //user data save into database
-    app.post('/users', async (req, res) => {
+    app.post("/users", async (req, res) => {
       const user = req.body;
       const result = await usersCollection.insertOne(user);
       res.send(result);
     });
 
     //
-    app.put('/users/admin/:id', verifyJWT, async (req, res) => {
+    app.put("/users/admin/:id", verifyJWT, async (req, res) => {
       const decodedEmail = req.decoded.email;
       const query = { email: decodedEmail };
       const user = await usersCollection.findOne(query);
 
-      if (user?.role !== 'admin') {
-        return res.status(403).send({ message: 'forbidden access' });
+      if (user?.role !== "admin") {
+        return res.status(403).send({ message: "forbidden access" });
       }
 
       const id = req.params.id;
@@ -163,7 +171,7 @@ async function run() {
       const options = { upsert: true };
       const updatedDoc = {
         $set: {
-          role: 'admin',
+          role: "admin",
         },
       };
 
@@ -176,7 +184,7 @@ async function run() {
       res.send(result);
     });
 
-    app.get('/sellers', async (req, res) => {
+    app.get("/sellers", async (req, res) => {
       const query = {};
       const sellers = await sellersCollection.find(query).toArray();
       res.send(sellers);
@@ -187,7 +195,7 @@ async function run() {
     //   const result = await sellersCollection.insertOne(seller);
     //   res.send(result);
     // });
-    app.post('/category', async (req, res) => {
+    app.post("/category", async (req, res) => {
       const product = req.body;
       const result = await dellCollection.insertOne(product);
       res.send(result);
@@ -198,8 +206,8 @@ async function run() {
 
 run().catch(console.log());
 
-app.get('/', (req, res) => {
-  res.send('retailer server work');
+app.get("/", (req, res) => {
+  res.send("retailer server work");
 });
 
 //category load
