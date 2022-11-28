@@ -49,6 +49,7 @@ async function run() {
 
     //users collection
     const usersCollection = client.db('retailerMania').collection('users');
+    const sellersCollection = client.db('retailerMania').collection('sellers');
 
     //categories showing
     app.get('/category', async (req, res) => {
@@ -64,6 +65,16 @@ async function run() {
       const cursor = dellCollection.find(query);
       const items = await cursor.toArray();
       res.send(items);
+    });
+
+    //add product category route
+    app.get('/categoryadd', async (req, res) => {
+      const query = {};
+      const result = await retailerCollection
+        .find(query)
+        .project({ title: 1 })
+        .toArray();
+      res.send(result);
     });
 
     //get user specific data into database
@@ -110,6 +121,13 @@ async function run() {
       res.send(users);
     });
 
+    app.get('/users/admin/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({ isAdmin: user?.role === 'admin' });
+    });
+
     //user data save into database
     app.post('/users', async (req, res) => {
       const user = req.body;
@@ -142,6 +160,18 @@ async function run() {
         options
       );
 
+      res.send(result);
+    });
+
+    app.get('/sellers', async (req, res) => {
+      const query = {};
+      const sellers = await sellersCollection.find(query).toArray();
+      res.send(sellers);
+    });
+
+    app.post('/sellers', async (req, res) => {
+      const seller = req.body;
+      const result = await sellersCollection.insertOne(seller);
       res.send(result);
     });
   } finally {
