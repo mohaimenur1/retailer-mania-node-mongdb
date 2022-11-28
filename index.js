@@ -1,10 +1,10 @@
 /** @format */
 
-const express = require("express");
-const cors = require("cors");
-const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-var jwt = require("jsonwebtoken");
-require("dotenv").config();
+const express = require('express');
+const cors = require('cors');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const jwt = require('jsonwebtoken');
+require('dotenv').config();
 
 const app = express();
 
@@ -21,44 +21,44 @@ const client = new MongoClient(uri, {
   serverApi: ServerApiVersion.v1,
 });
 
-// function verifyJWT(req, res, next) {
-//   const authHeader = req.headers.authorization;
-//   if (!authHeader) {
-//     return res.status(401).send("unauthorized access");
-//   }
-//   const token = authHeader.split(" ")[1];
-//   jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
-//     if (err) {
-//       return res.status(403).send({ message: "forbidden access" });
-//     }
-//     req.decoded = decoded;
-//     next();
-//   });
-// }
+function verifyJWT(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).send('unauthorized access');
+  }
+  const token = authHeader.split(' ')[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    if (err) {
+      return res.status(403).send({ message: 'forbidden access' });
+    }
+    req.decoded = decoded;
+    next();
+  });
+}
 
 async function run() {
   try {
     //create collections
     const retailerCollection = client
-      .db("retailerMania")
-      .collection("categories");
-    const dellCollection = client.db("retailerMania").collection("dell");
+      .db('retailerMania')
+      .collection('categories');
+    const dellCollection = client.db('retailerMania').collection('dell');
     const laptopBookingCollection = client
-      .db("retailerMania")
-      .collection("laptopBookings");
+      .db('retailerMania')
+      .collection('laptopBookings');
 
     //users collection
-    const usersCollection = client.db("retailerMania").collection("users");
+    const usersCollection = client.db('retailerMania').collection('users');
 
     //categories showing
-    app.get("/category", async (req, res) => {
+    app.get('/category', async (req, res) => {
       const cursor = retailerCollection.find({});
       const category = await cursor.toArray();
       res.send(category);
     });
 
     //filtering the category id and get specific category items
-    app.get("/category/:id", async (req, res) => {
+    app.get('/category/:id', async (req, res) => {
       let id = req.params.id;
       let query = { categoryid: id };
       const cursor = dellCollection.find(query);
@@ -67,13 +67,13 @@ async function run() {
     });
 
     //get user specific data into database
-    app.get("/bookings",  async (req, res) => {
+    app.get('/bookings', verifyJWT, async (req, res) => {
       const email = req.query.email;
-      // const decodedEmail = req.decoded.email;
-      // // console.log("token", req.headers.authorization);
-      // if (email !== decodedEmail) {
-      //   return res.status(403).send({ message: "forbidden access" });
-      // }
+      const decodedEmail = req.decoded.email;
+      // console.log("token", req.headers.authorization);
+      if (email !== decodedEmail) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
       const query = { email: email };
 
       const bookings = laptopBookingCollection.find(query);
@@ -82,29 +82,66 @@ async function run() {
     });
 
     // inserting laptop booking data
-    app.post("/bookings", async (req, res) => {
+    app.post('/bookings', async (req, res) => {
       const bookings = req.body;
       const result = await laptopBookingCollection.insertOne(bookings);
       res.send(result);
     });
 
-    // app.get("/jwt", async (req, res) => {
-    //   const email = req.query.email;
-    //   const query = { email: email };
-    //   const user = await usersCollection.findOne(query);
+    app.get('/jwt', async (req, res) => {
+      const email = req.query.email;
+      const query = { email: email };
+      const user = await usersCollection.findOne(query);
 
-    //   if (user) {
-    //     const token = jwt.sign({ email }, process.env.ACCESS_TOKEN);
-    //     return res.send({ accessToken: token });
-    //   }
-    //   console.log(user);
-    //   res.status(403).send({ accessToken: "" });
-    // });
+      if (user) {
+        const token = jwt.sign({ email }, process.env.ACCESS_TOKEN, {
+          expiresIn: '1h',
+        });
+        return res.send({ accessToken: token });
+      }
+      console.log(user);
+      res.status(403).send({ accessToken: '' });
+    });
+
+    //get all the users
+    app.get('/users', async (req, res) => {
+      const query = {};
+      const users = await usersCollection.find(query).toArray();
+      res.send(users);
+    });
 
     //user data save into database
-    app.post("/users", async (req, res) => {
+    app.post('/users', async (req, res) => {
       const user = req.body;
       const result = await usersCollection.insertOne(user);
+      res.send(result);
+    });
+
+    //
+    app.put('/users/admin/:id', verifyJWT, async (req, res) => {
+      const decodedEmail = req.decoded.email;
+      const query = { email: decodedEmail };
+      const user = await usersCollection.findOne(query);
+
+      if (user?.role !== 'admin') {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+
+      const id = req.params.id;
+      const filter = { _id: ObjectId(id) };
+      const options = { upsert: true };
+      const updatedDoc = {
+        $set: {
+          role: 'admin',
+        },
+      };
+
+      const result = await usersCollection.updateOne(
+        filter,
+        updatedDoc,
+        options
+      );
+
       res.send(result);
     });
   } finally {
@@ -113,8 +150,8 @@ async function run() {
 
 run().catch(console.log());
 
-app.get("/", (req, res) => {
-  res.send("retailer server work");
+app.get('/', (req, res) => {
+  res.send('retailer server work');
 });
 
 //category load
