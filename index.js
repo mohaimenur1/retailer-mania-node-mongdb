@@ -66,6 +66,13 @@ async function run() {
       const items = await cursor.toArray();
       res.send(items);
     });
+    app.get('/products', async (req, res) => {
+      let email = req.query.email;
+      let query = { email: email };
+      const cursor = dellCollection.find(query);
+      const items = await cursor.toArray();
+      res.send(items);
+    });
 
     //add product category route
     app.get('/categoryadd', async (req, res) => {
@@ -127,6 +134,12 @@ async function run() {
       const user = await usersCollection.findOne(query);
       res.send({ isAdmin: user?.role === 'admin' });
     });
+    app.get('/users/seller/:email', async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const user = await usersCollection.findOne(query);
+      res.send({ isSeller: user?.role === 'seller' });
+    });
 
     //user data save into database
     app.post('/users', async (req, res) => {
@@ -169,9 +182,14 @@ async function run() {
       res.send(sellers);
     });
 
-    app.post('/sellers', async (req, res) => {
-      const seller = req.body;
-      const result = await sellersCollection.insertOne(seller);
+    // app.post('/sellers', async (req, res) => {
+    //   const seller = req.body;
+    //   const result = await sellersCollection.insertOne(seller);
+    //   res.send(result);
+    // });
+    app.post('/category', async (req, res) => {
+      const product = req.body;
+      const result = await dellCollection.insertOne(product);
       res.send(result);
     });
   } finally {
